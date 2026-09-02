@@ -261,13 +261,36 @@
     });
   }
 
+  /* ── Baker: pagina → platte, self-contained HTML (gedeeld door CMS + builder)
+     Inline theme.css, header vóór <main>, footer+WhatsApp+gedrag ná </main>,
+     externe theme-verwijzingen weg. Markers maken opnieuw bakken idempotent;
+     de <main>-content blijft ongemoeid. ───────────────────────────────────── */
+  function bakePage(html, page, cssText, cfg) {
+    var email = (cfg.footer && cfg.footer.contact && cfg.footer.contact.email) || '';
+    var BEH = '<script>window.__contactEmail=' + JSON.stringify(email) + ';(' + wireBehaviour.toString() + ')();<\/script>';
+    var reBlock = function (k) { return new RegExp('<!-- CMS:' + k + ':START -->[\\s\\S]*?<!-- CMS:' + k + ':END -->'); };
+    var ensure = function (h, key, inner, fbIns) {
+      var b = '<!-- CMS:' + key + ':START -->\n' + inner + '\n<!-- CMS:' + key + ':END -->';
+      return reBlock(key).test(h) ? h.replace(reBlock(key), b) : fbIns(h, b);
+    };
+    html = ensure(html, 'THEMECSS', '<style>\n' + cssText + '\n</style>', function (h, b) {
+      return /<link[^>]+theme\.css[^>]*>/.test(h) ? h.replace(/<link[^>]+theme\.css[^>]*>/, b) : h.replace('</head>', b + '\n</head>');
+    });
+    html = html.replace(/\s*<script[^>]+theme\.js[^>]*><\/script>/g, '');
+    var headerHTML = headerOuterHTML(cfg, page).replace(/ onerror="[^"]*"/g, '');
+    html = ensure(html, 'HEADER', headerHTML, function (h, b) { return h.replace(/<main\b/, b + '\n<main'); });
+    var chrome = (footerOuterHTML(cfg) + '\n' + waOuterHTML(cfg)).replace(/ onerror="[^"]*"/g, '') + '\n' + BEH;
+    html = ensure(html, 'CHROME', chrome, function (h, b) { return h.replace(/<\/main>/, '</main>\n' + b); });
+    return html;
+  }
+
   /* ── Export (baker) + auto-run (runtime) ────────────────────────────────── */
   var API = {
     DEFAULTS: DEFAULTS, esc: esc, activeHrefFor: activeHrefFor,
     headerOuterHTML: headerOuterHTML, footerOuterHTML: footerOuterHTML, waOuterHTML: waOuterHTML,
-    // baker-helper: al aanwezige gedrag-behoeften (count-up etc.) blijven in wireBehaviour;
-    // een gebakken pagina heeft nog een kleine runtime nodig voor scroll-blur/hamburger/count-up.
-    wireBehaviour: wireBehaviour
+    // een gebakken pagina heeft een kleine runtime nodig voor scroll-blur/hamburger/count-up:
+    wireBehaviour: wireBehaviour,
+    bakePage: bakePage
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (typeof window !== 'undefined') window.Theme = API;
