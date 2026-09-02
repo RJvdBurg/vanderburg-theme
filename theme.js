@@ -9,6 +9,17 @@
   var BASE = 'https://rjvdburg.github.io/vanderburg-theme/';
   var esc = function (s) { return String(s).replace(/&/g, '&amp;'); };
 
+  // Assets zijn SITE-specifiek: standaard uit de site-repo (relatief pad), met
+  // een generieke placeholder uit het theme als vangnet. Een site kan de paden
+  // overschrijven via window.SITE = { logo:'...', logoWhite:'...' }.
+  var SITE = window.SITE || {};
+  var LOGO = SITE.logo || 'assets/vanderburg-logo.svg';
+  var LOGO_WHITE = SITE.logoWhite || 'assets/vanderburg-logo-white.svg';
+  var DEF_LOGO = BASE + 'assets/default-logo.svg';
+  var DEF_LOGO_WHITE = BASE + 'assets/default-logo-white.svg';
+  // onerror-fallback naar de theme-default als de site het logo (nog) niet heeft
+  var fb = function (def) { return " onerror=\"this.onerror=null;this.src='" + def + "'\""; };
+
   var SERVICES = [
     ['relatietherapie.html', 'Relatietherapie'],
     ['eft-relatietherapie.html', 'EFT-relatietherapie'],
@@ -62,7 +73,7 @@
     h.innerHTML =
       '<nav class="nav">' +
         '<a href="index.html" class="logo" aria-label="Van der Burg Coaching home">' +
-          '<img src="' + BASE + 'assets/vanderburg-logo.svg" alt="Van der Burg Coaching &amp; Relatietherapie"></a>' +
+          '<img src="' + LOGO + '" alt="Van der Burg Coaching &amp; Relatietherapie"' + fb(DEF_LOGO) + '></a>' +
         '<ul class="nav-links">' + links + '</ul>' +
         '<a href="contact.html" class="btn btn-cta cta">Gratis Kennismaking</a>' +
         '<button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">' +
@@ -80,7 +91,7 @@
     f.innerHTML =
       '<div class="container"><div class="footer-grid">' +
         '<div>' +
-          '<div class="flogo"><img src="' + BASE + 'assets/vanderburg-logo-white.svg" alt="Van der Burg Coaching"></div>' +
+          '<div class="flogo"><img src="' + LOGO_WHITE + '" alt="Van der Burg Coaching"' + fb(DEF_LOGO_WHITE) + '></div>' +
           '<p>Waar zelfkennis de basis vormt voor groei. Ontdek wie je bent en versterk je relaties.</p>' +
           '<div class="social">' +
             '<a href="https://www.linkedin.com/in/deborah-van-der-burg-27343b9/" target="_blank" rel="noopener" aria-label="LinkedIn">in</a>' +
