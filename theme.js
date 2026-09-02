@@ -1,16 +1,20 @@
 /* ============================================================================
    Gedeelde chrome (header, footer, WhatsApp, gedrag) — theme.js
-   Onderdeel van het theme (repo: vanderburg-theme). Geladen via:
-     <script defer src="https://rjvdburg.github.io/vanderburg-theme/theme.js"></script>
+   Onderdeel van het theme (repo: vanderburg-theme).
 
-   CONFIG-GEDREVEN: alle site-specifieke gegevens (merk, logo, menu, footer/NAP,
-   socials, WhatsApp) komen uit een `site.json` in de root van de SITE-repo.
-   Zo stuurt één generiek theme.js meerdere sites aan — een nieuwe site is enkel
-   een eigen site.json + eigen assets. Ontbreekt site.json, dan gelden de
-   DEFAULTS hieronder (Van der Burg) zodat er nooit iets breekt.
-   Per-site override kan ook via window.SITE = { ... } vóór dit script.
+   TWEE ROLLEN, ÉÉN BRON:
+   1. Runtime (op de site): geladen via
+        <script defer src="https://rjvdburg.github.io/vanderburg-theme/theme.js"></script>
+      Leest `site.json` uit de site-repo en injecteert de chrome.
+   2. Baker (in de CMS of node): de pure functies headerOuterHTML/footerOuterHTML/
+      waOuterHTML (cfg → HTML-string) worden hergebruikt om pagina's te BAKKEN tot
+      self-contained platte HTML. Zo bestaat de chrome maar op één plek.
+
+   Config komt uit `site.json` in de root van de SITE-repo; ontbreekt die, dan
+   gelden de DEFAULTS (Van der Burg). Override kan via window.SITE = {...}.
    ========================================================================== */
 (function () {
+  'use strict';
   var BASE = 'https://rjvdburg.github.io/vanderburg-theme/';
   var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;'); };
   var DEF_LOGO = BASE + 'assets/default-logo.svg';
@@ -73,9 +77,11 @@
     whatsapp: { number: '31851249076', text: 'Hoi Deborah, ik heb een vraag.', label: 'Hoe kan ik je helpen?' }
   };
 
-  var current = (location.pathname.split('/').pop() || 'index.html');
+  function currentPage() {
+    return (typeof location !== 'undefined' ? (location.pathname.split('/').pop() || 'index.html') : 'index.html');
+  }
 
-  function activeHrefFor(cfg) {
+  function activeHrefFor(cfg, current) {
     for (var i = 0; i < cfg.nav.length; i++) {
       var it = cfg.nav[i];
       if (it.href === current) return it.href;
@@ -84,9 +90,10 @@
     return current;
   }
 
-  /* ── Header ─────────────────────────────────────────────────────────────── */
-  function buildHeader(cfg) {
-    var active = activeHrefFor(cfg);
+  /* ── Pure HTML-builders (cfg → string) — gedeeld door runtime én baker ──── */
+  function headerOuterHTML(cfg, current) {
+    current = current || currentPage();
+    var active = activeHrefFor(cfg, current);
     var links = cfg.nav.map(function (it) {
       var cls = it.href === active ? ' class="active"' : '';
       if (it.sub && it.sub.length) {
@@ -98,7 +105,6 @@
       }
       return '<li><a href="' + it.href + '"' + cls + '>' + esc(it.label) + '</a></li>';
     }).join('');
-
     var mobile = cfg.nav.map(function (it) {
       var row = '<a href="' + it.href + '">' + esc(it.label) + '</a>';
       if (it.sub) row += it.sub.map(function (s) {
@@ -106,11 +112,8 @@
       }).join('');
       return row;
     }).join('');
-
     var cta = cfg.cta || {};
-    var h = document.createElement('header');
-    h.className = 'site-header'; h.id = 'siteHeader';
-    h.innerHTML =
+    return '<header class="site-header" id="siteHeader">' +
       '<nav class="nav">' +
         '<a href="index.html" class="logo" aria-label="' + esc(cfg.brand) + ' home">' +
           '<img src="' + (cfg.logo || DEF_LOGO) + '" alt="' + esc(cfg.logoAlt || cfg.brand) + '"' + fb(DEF_LOGO) + '></a>' +
@@ -121,12 +124,11 @@
       '</nav>' +
       '<div class="mobile-menu" id="mobileMenu">' + mobile +
         (cta.label ? '<a href="' + (cta.href || 'contact.html') + '" class="btn btn-cta">' + esc(cta.label) + '</a>' : '') +
-      '</div>';
-    return h;
+      '</div>' +
+    '</header>';
   }
 
-  /* ── Footer + WhatsApp ──────────────────────────────────────────────────── */
-  function buildFooter(cfg) {
+  function footerOuterHTML(cfg) {
     var f = cfg.footer || {};
     var social = (cfg.social || []).map(function (s) {
       return '<a href="' + s.href + '" target="_blank" rel="noopener" aria-label="' + esc(s.label) + '">' + esc(s.short || s.label) + '</a>';
@@ -144,51 +146,41 @@
       (ct.phone ? '<p><a href="' + (ct.phoneHref || 'tel:' + ct.phone) + '">' + esc(ct.phone) + '</a></p>' : '') +
       (ct.email ? '<p><a href="mailto:' + ct.email + '">' + esc(ct.email) + '</a></p>' : '') +
       '</div>';
-
-    var el = document.createElement('footer');
-    el.className = 'site-footer';
-    el.innerHTML =
-      '<div class="container"><div class="footer-grid">' +
+    return '<footer class="site-footer"><div class="container"><div class="footer-grid">' +
         '<div>' +
           '<div class="flogo"><img src="' + (cfg.logoWhite || DEF_LOGO_WHITE) + '" alt="' + esc(cfg.brand) + '"' + fb(DEF_LOGO_WHITE) + '></div>' +
           (f.tagline ? '<p>' + esc(f.tagline) + '</p>' : '') +
           (social ? '<div class="social">' + social + '</div>' : '') +
-        '</div>' +
-        cols +
-        contactHtml +
+        '</div>' + cols + contactHtml +
       '</div>' +
       (f.bottom ? '<div class="footer-bottom">' + esc(f.bottom) + '</div>' : '') +
-      '</div>';
-    return el;
+    '</div></footer>';
   }
 
-  function buildWhatsApp(cfg) {
+  function waOuterHTML(cfg) {
     var w = cfg.whatsapp;
-    if (!w || !w.number) return null;
-    var a = document.createElement('a');
-    a.className = 'wa-float';
-    a.href = 'https://wa.me/' + w.number + (w.text ? '?text=' + encodeURIComponent(w.text) : '');
-    a.target = '_blank'; a.rel = 'noopener';
-    a.setAttribute('aria-label', 'WhatsApp — ' + (w.label || 'Contact'));
-    a.innerHTML = WA_SVG + '<span>' + esc(w.label || 'WhatsApp') + '</span>';
-    return a;
+    if (!w || !w.number) return '';
+    var href = 'https://wa.me/' + w.number + (w.text ? '?text=' + encodeURIComponent(w.text) : '');
+    return '<a class="wa-float" href="' + href + '" target="_blank" rel="noopener" aria-label="WhatsApp — ' +
+      esc(w.label || 'Contact') + '">' + WA_SVG + '<span>' + esc(w.label || 'WhatsApp') + '</span></a>';
   }
 
   /* ── Gedrag (scroll-blur, hamburger, count-up, contactformulier) ─────────── */
   function wireBehaviour() {
     var h = document.getElementById('siteHeader');
-    var RAMP = 120;
-    function onScroll() {
-      var t = Math.min(Math.max(window.scrollY, 0) / RAMP, 1);
-      h.style.background = 'rgba(255,255,255,' + (t * 0.97).toFixed(3) + ')';
-      var blur = 'blur(' + (t * 12).toFixed(2) + 'px)';
-      h.style.backdropFilter = blur; h.style.webkitBackdropFilter = blur;
-      h.style.boxShadow = t > 0.02 ? ('0 2px 16px rgba(62,46,109,' + (t * 0.10).toFixed(3) + ')') : 'none';
-      h.style.borderBottomColor = 'rgba(240,240,240,' + t.toFixed(3) + ')';
+    if (h) {
+      var RAMP = 120;
+      var onScroll = function () {
+        var t = Math.min(Math.max(window.scrollY, 0) / RAMP, 1);
+        h.style.background = 'rgba(255,255,255,' + (t * 0.97).toFixed(3) + ')';
+        var blur = 'blur(' + (t * 12).toFixed(2) + 'px)';
+        h.style.backdropFilter = blur; h.style.webkitBackdropFilter = blur;
+        h.style.boxShadow = t > 0.02 ? ('0 2px 16px rgba(62,46,109,' + (t * 0.10).toFixed(3) + ')') : 'none';
+        h.style.borderBottomColor = 'rgba(240,240,240,' + t.toFixed(3) + ')';
+      };
+      window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
     }
-    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-    // Count-up: robuust — IntersectionObserver + scroll/resize/load-vangnet.
     var nums = [].slice.call(document.querySelectorAll('.stat-num'));
     function countUp(el) {
       if (el._counted) return; el._counted = true;
@@ -247,31 +239,43 @@
     }
   }
 
-  /* ── Config laden + injecteren ──────────────────────────────────────────── */
+  /* ── Runtime: config laden + injecteren ─────────────────────────────────── */
   function loadSiteJson() {
     return fetch('site.json', { cache: 'no-cache' })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; });
   }
-
   function build(cfg) {
-    if (document.getElementById('siteHeader')) return; // dubbel-injectie voorkomen
-    // maak contact-e-mail beschikbaar voor het formulier-gedrag
+    if (document.getElementById('siteHeader')) return; // al aanwezig (bijv. gebakken pagina)
     if (cfg.footer && cfg.footer.contact && cfg.footer.contact.email) window.__contactEmail = cfg.footer.contact.email;
-    document.body.insertBefore(buildHeader(cfg), document.body.firstChild);
-    document.body.appendChild(buildFooter(cfg));
-    var wa = buildWhatsApp(cfg); if (wa) document.body.appendChild(wa);
+    document.body.insertAdjacentHTML('afterbegin', headerOuterHTML(cfg));
+    document.body.insertAdjacentHTML('beforeend', footerOuterHTML(cfg));
+    var wa = waOuterHTML(cfg); if (wa) document.body.insertAdjacentHTML('beforeend', wa);
     wireBehaviour();
   }
-
   function start() {
     loadSiteJson().then(function (site) {
-      var cfg = Object.assign({}, DEFAULTS, site);      // site.json wint per top-level sleutel
-      if (window.SITE) cfg = Object.assign(cfg, window.SITE); // expliciete override wint altijd
+      var cfg = Object.assign({}, DEFAULTS, site);
+      if (window.SITE) cfg = Object.assign(cfg, window.SITE);
       build(cfg);
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-  else start();
+  /* ── Export (baker) + auto-run (runtime) ────────────────────────────────── */
+  var API = {
+    DEFAULTS: DEFAULTS, esc: esc, activeHrefFor: activeHrefFor,
+    headerOuterHTML: headerOuterHTML, footerOuterHTML: footerOuterHTML, waOuterHTML: waOuterHTML,
+    // baker-helper: al aanwezige gedrag-behoeften (count-up etc.) blijven in wireBehaviour;
+    // een gebakken pagina heeft nog een kleine runtime nodig voor scroll-blur/hamburger/count-up.
+    wireBehaviour: wireBehaviour
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  if (typeof window !== 'undefined') window.Theme = API;
+
+  var isBrowser = (typeof document !== 'undefined');
+  var libOnly = (typeof window !== 'undefined' && window.THEME_LIB_ONLY);
+  if (isBrowser && !libOnly) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  }
 })();
