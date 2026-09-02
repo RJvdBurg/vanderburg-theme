@@ -1,145 +1,183 @@
 /* ============================================================================
-   Van der Burg Coaching — gedeelde chrome (header, footer, WhatsApp, gedrag)
+   Gedeelde chrome (header, footer, WhatsApp, gedrag) — theme.js
    Onderdeel van het theme (repo: vanderburg-theme). Geladen via:
      <script defer src="https://rjvdburg.github.io/vanderburg-theme/theme.js"></script>
-   Injecteert de site-header + footer + WhatsApp-knop en zet het gedrag op.
-   Pagina's bevatten zelf alleen nog <main>-content + hun eigen <head> (SEO/schema).
+
+   CONFIG-GEDREVEN: alle site-specifieke gegevens (merk, logo, menu, footer/NAP,
+   socials, WhatsApp) komen uit een `site.json` in de root van de SITE-repo.
+   Zo stuurt één generiek theme.js meerdere sites aan — een nieuwe site is enkel
+   een eigen site.json + eigen assets. Ontbreekt site.json, dan gelden de
+   DEFAULTS hieronder (Van der Burg) zodat er nooit iets breekt.
+   Per-site override kan ook via window.SITE = { ... } vóór dit script.
    ========================================================================== */
 (function () {
   var BASE = 'https://rjvdburg.github.io/vanderburg-theme/';
-  var esc = function (s) { return String(s).replace(/&/g, '&amp;'); };
-
-  // Assets zijn SITE-specifiek: standaard uit de site-repo (relatief pad), met
-  // een generieke placeholder uit het theme als vangnet. Een site kan de paden
-  // overschrijven via window.SITE = { logo:'...', logoWhite:'...' }.
-  var SITE = window.SITE || {};
-  var LOGO = SITE.logo || 'assets/vanderburg-logo.svg';
-  var LOGO_WHITE = SITE.logoWhite || 'assets/vanderburg-logo-white.svg';
+  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;'); };
   var DEF_LOGO = BASE + 'assets/default-logo.svg';
   var DEF_LOGO_WHITE = BASE + 'assets/default-logo-white.svg';
-  // onerror-fallback naar de theme-default als de site het logo (nog) niet heeft
-  var fb = function (def) { return " onerror=\"this.onerror=null;this.src='" + def + "'\""; };
+  var fb = function (def) { return ' onerror="this.onerror=null;this.src=\'' + def + '\'"'; };
+  var WA_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>';
 
-  var SERVICES = [
-    ['relatietherapie.html', 'Relatietherapie'],
-    ['eft-relatietherapie.html', 'EFT-relatietherapie'],
-    ['individuele-coaching.html', 'Individuele Coaching'],
-    ['v-cirkel-coaching.html', 'V-Cirkel Coaching'],
-    ['burn-out-stress-coaching.html', 'Burn-out & Stress Coaching'],
-    ['kennismaking.html', 'Kennismaking']
-  ];
-  var NAV = [
-    ['index.html', 'Home'],
-    ['over-deborah.html', 'Over Deborah'],
-    ['diensten.html', 'Diensten', true],
-    ['tarieven.html', 'Tarieven'],
-    ['contact.html', 'Contact']
-  ];
+  /* ── DEFAULTS (Van der Burg) — fallback als er geen site.json is ────────── */
+  var DEFAULTS = {
+    brand: 'Van der Burg Coaching',
+    logo: 'assets/vanderburg-logo.svg',
+    logoWhite: 'assets/vanderburg-logo-white.svg',
+    logoAlt: 'Van der Burg Coaching & Relatietherapie',
+    cta: { label: 'Gratis Kennismaking', href: 'contact.html' },
+    nav: [
+      { href: 'index.html', label: 'Home' },
+      { href: 'over-deborah.html', label: 'Over Deborah' },
+      { href: 'diensten.html', label: 'Diensten', sub: [
+        { href: 'relatietherapie.html', label: 'Relatietherapie' },
+        { href: 'eft-relatietherapie.html', label: 'EFT-relatietherapie' },
+        { href: 'individuele-coaching.html', label: 'Individuele Coaching' },
+        { href: 'v-cirkel-coaching.html', label: 'V-Cirkel Coaching' },
+        { href: 'burn-out-stress-coaching.html', label: 'Burn-out & Stress Coaching' },
+        { href: 'kennismaking.html', label: 'Kennismaking' }
+      ] },
+      { href: 'tarieven.html', label: 'Tarieven' },
+      { href: 'contact.html', label: 'Contact' }
+    ],
+    footer: {
+      tagline: 'Waar zelfkennis de basis vormt voor groei. Ontdek wie je bent en versterk je relaties.',
+      columns: [
+        { title: 'Navigatie', links: [
+          { href: 'index.html', label: 'Home' },
+          { href: 'over-deborah.html', label: 'Over Deborah' },
+          { href: 'diensten.html', label: 'Diensten' },
+          { href: 'tarieven.html', label: 'Tarieven' },
+          { href: 'contact.html', label: 'Contact' }
+        ] },
+        { title: 'Diensten', links: [
+          { href: 'relatietherapie.html', label: 'Relatietherapie' },
+          { href: 'eft-relatietherapie.html', label: 'EFT-relatietherapie' },
+          { href: 'v-cirkel-coaching.html', label: 'V-Cirkel Coaching' },
+          { href: 'individuele-coaching.html', label: 'Individuele Coaching' },
+          { href: 'burn-out-stress-coaching.html', label: 'Burn-out & Stress Coaching' },
+          { href: 'werkgebied.html', label: 'Werkgebied' }
+        ] }
+      ],
+      contact: {
+        title: 'Contact',
+        address: ['Offemweg 47', '2201 HB Noordwijk'],
+        phone: '085-1249076', phoneHref: 'tel:+31851249076',
+        email: 'deborah@vanderburgcoaching.com'
+      },
+      bottom: '© 2026 Van der Burg Coaching & Relatietherapie · Noordwijk'
+    },
+    social: [
+      { label: 'LinkedIn', short: 'in', href: 'https://www.linkedin.com/in/deborah-van-der-burg-27343b9/' },
+      { label: 'Instagram', short: 'ig', href: 'https://www.instagram.com/vanderburg_coaching/' }
+    ],
+    whatsapp: { number: '31851249076', text: 'Hoi Deborah, ik heb een vraag.', label: 'Hoe kan ik je helpen?' }
+  };
 
-  // Huidige pagina + welke top-nav-link "actief" is
   var current = (location.pathname.split('/').pop() || 'index.html');
-  var servicePages = SERVICES.map(function (s) { return s[0]; }).concat(['diensten.html']);
-  var activeHref = servicePages.indexOf(current) !== -1 ? 'diensten.html' : current;
 
-  /* ---- Header ------------------------------------------------------------- */
-  function buildHeader() {
-    var links = NAV.map(function (item) {
-      var href = item[0], label = item[1], hasSub = item[2];
-      var cls = href === activeHref ? ' class="active"' : '';
-      if (hasSub) {
-        var sub = SERVICES.map(function (s) {
-          return '<li><a href="' + s[0] + '">' + esc(s[1]) + '</a></li>';
+  function activeHrefFor(cfg) {
+    for (var i = 0; i < cfg.nav.length; i++) {
+      var it = cfg.nav[i];
+      if (it.href === current) return it.href;
+      if (it.sub) for (var j = 0; j < it.sub.length; j++) if (it.sub[j].href === current) return it.href;
+    }
+    return current;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  function buildHeader(cfg) {
+    var active = activeHrefFor(cfg);
+    var links = cfg.nav.map(function (it) {
+      var cls = it.href === active ? ' class="active"' : '';
+      if (it.sub && it.sub.length) {
+        var sub = it.sub.map(function (s) {
+          return '<li><a href="' + s.href + '">' + esc(s.label) + '</a></li>';
         }).join('');
-        return '<li class="has-sub"><a href="' + href + '"' + cls + '>' + esc(label) + '</a>' +
+        return '<li class="has-sub"><a href="' + it.href + '"' + cls + '>' + esc(it.label) + '</a>' +
                '<div class="submenu"><ul class="submenu-inner">' + sub + '</ul></div></li>';
       }
-      return '<li><a href="' + href + '"' + cls + '>' + esc(label) + '</a></li>';
+      return '<li><a href="' + it.href + '"' + cls + '>' + esc(it.label) + '</a></li>';
     }).join('');
 
-    var mobile = NAV.map(function (item) {
-      var href = item[0], label = item[1], hasSub = item[2];
-      var row = '<a href="' + href + '">' + esc(label) + '</a>';
-      if (hasSub) {
-        row += SERVICES.map(function (s) {
-          return '<a href="' + s[0] + '" class="msub">— ' + esc(s[1]) + '</a>';
-        }).join('');
-      }
+    var mobile = cfg.nav.map(function (it) {
+      var row = '<a href="' + it.href + '">' + esc(it.label) + '</a>';
+      if (it.sub) row += it.sub.map(function (s) {
+        return '<a href="' + s.href + '" class="msub">— ' + esc(s.label) + '</a>';
+      }).join('');
       return row;
     }).join('');
 
+    var cta = cfg.cta || {};
     var h = document.createElement('header');
-    h.className = 'site-header';
-    h.id = 'siteHeader';
+    h.className = 'site-header'; h.id = 'siteHeader';
     h.innerHTML =
       '<nav class="nav">' +
-        '<a href="index.html" class="logo" aria-label="Van der Burg Coaching home">' +
-          '<img src="' + LOGO + '" alt="Van der Burg Coaching &amp; Relatietherapie"' + fb(DEF_LOGO) + '></a>' +
+        '<a href="index.html" class="logo" aria-label="' + esc(cfg.brand) + ' home">' +
+          '<img src="' + (cfg.logo || DEF_LOGO) + '" alt="' + esc(cfg.logoAlt || cfg.brand) + '"' + fb(DEF_LOGO) + '></a>' +
         '<ul class="nav-links">' + links + '</ul>' +
-        '<a href="contact.html" class="btn btn-cta cta">Gratis Kennismaking</a>' +
+        (cta.label ? '<a href="' + (cta.href || 'contact.html') + '" class="btn btn-cta cta">' + esc(cta.label) + '</a>' : '') +
         '<button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">' +
           '<span></span><span></span><span></span></button>' +
       '</nav>' +
       '<div class="mobile-menu" id="mobileMenu">' + mobile +
-        '<a href="contact.html" class="btn btn-cta">Gratis Kennismaking</a></div>';
+        (cta.label ? '<a href="' + (cta.href || 'contact.html') + '" class="btn btn-cta">' + esc(cta.label) + '</a>' : '') +
+      '</div>';
     return h;
   }
 
-  /* ---- Footer + WhatsApp -------------------------------------------------- */
-  function buildFooter() {
-    var f = document.createElement('footer');
-    f.className = 'site-footer';
-    f.innerHTML =
+  /* ── Footer + WhatsApp ──────────────────────────────────────────────────── */
+  function buildFooter(cfg) {
+    var f = cfg.footer || {};
+    var social = (cfg.social || []).map(function (s) {
+      return '<a href="' + s.href + '" target="_blank" rel="noopener" aria-label="' + esc(s.label) + '">' + esc(s.short || s.label) + '</a>';
+    }).join('');
+    var cols = (f.columns || []).map(function (c) {
+      var links = (c.links || []).map(function (l) {
+        return '<li><a href="' + l.href + '">' + esc(l.label) + '</a></li>';
+      }).join('');
+      return '<div><h4>' + esc(c.title) + '</h4><ul class="footer-links">' + links + '</ul></div>';
+    }).join('');
+    var ct = f.contact || {};
+    var addr = (ct.address || []).map(esc).join('<br>');
+    var contactHtml = '<div class="footer-contact"><h4>' + esc(ct.title || 'Contact') + '</h4>' +
+      (addr ? '<p>' + addr + '</p>' : '') +
+      (ct.phone ? '<p><a href="' + (ct.phoneHref || 'tel:' + ct.phone) + '">' + esc(ct.phone) + '</a></p>' : '') +
+      (ct.email ? '<p><a href="mailto:' + ct.email + '">' + esc(ct.email) + '</a></p>' : '') +
+      '</div>';
+
+    var el = document.createElement('footer');
+    el.className = 'site-footer';
+    el.innerHTML =
       '<div class="container"><div class="footer-grid">' +
         '<div>' +
-          '<div class="flogo"><img src="' + LOGO_WHITE + '" alt="Van der Burg Coaching"' + fb(DEF_LOGO_WHITE) + '></div>' +
-          '<p>Waar zelfkennis de basis vormt voor groei. Ontdek wie je bent en versterk je relaties.</p>' +
-          '<div class="social">' +
-            '<a href="https://www.linkedin.com/in/deborah-van-der-burg-27343b9/" target="_blank" rel="noopener" aria-label="LinkedIn">in</a>' +
-            '<a href="https://www.instagram.com/vanderburg_coaching/" target="_blank" rel="noopener" aria-label="Instagram">ig</a>' +
-          '</div>' +
+          '<div class="flogo"><img src="' + (cfg.logoWhite || DEF_LOGO_WHITE) + '" alt="' + esc(cfg.brand) + '"' + fb(DEF_LOGO_WHITE) + '></div>' +
+          (f.tagline ? '<p>' + esc(f.tagline) + '</p>' : '') +
+          (social ? '<div class="social">' + social + '</div>' : '') +
         '</div>' +
-        '<div><h4>Navigatie</h4><ul class="footer-links">' +
-          '<li><a href="index.html">Home</a></li>' +
-          '<li><a href="over-deborah.html">Over Deborah</a></li>' +
-          '<li><a href="diensten.html">Diensten</a></li>' +
-          '<li><a href="tarieven.html">Tarieven</a></li>' +
-          '<li><a href="contact.html">Contact</a></li>' +
-        '</ul></div>' +
-        '<div><h4>Diensten</h4><ul class="footer-links">' +
-          '<li><a href="relatietherapie.html">Relatietherapie</a></li>' +
-          '<li><a href="eft-relatietherapie.html">EFT-relatietherapie</a></li>' +
-          '<li><a href="v-cirkel-coaching.html">V-Cirkel Coaching</a></li>' +
-          '<li><a href="individuele-coaching.html">Individuele Coaching</a></li>' +
-          '<li><a href="burn-out-stress-coaching.html">Burn-out &amp; Stress Coaching</a></li>' +
-          '<li><a href="werkgebied.html">Werkgebied</a></li>' +
-        '</ul></div>' +
-        '<div class="footer-contact"><h4>Contact</h4>' +
-          '<p>Offemweg 47<br>2201 HB Noordwijk</p>' +
-          '<p><a href="tel:+31851249076">085-1249076</a></p>' +
-          '<p><a href="mailto:deborah@vanderburgcoaching.com">deborah@vanderburgcoaching.com</a></p>' +
-        '</div>' +
+        cols +
+        contactHtml +
       '</div>' +
-      '<div class="footer-bottom">© 2026 Van der Burg Coaching &amp; Relatietherapie · Noordwijk</div>' +
+      (f.bottom ? '<div class="footer-bottom">' + esc(f.bottom) + '</div>' : '') +
       '</div>';
-    return f;
+    return el;
   }
 
-  function buildWhatsApp() {
+  function buildWhatsApp(cfg) {
+    var w = cfg.whatsapp;
+    if (!w || !w.number) return null;
     var a = document.createElement('a');
     a.className = 'wa-float';
-    a.href = 'https://wa.me/31851249076?text=Hoi%20Deborah%2C%20ik%20heb%20een%20vraag.';
+    a.href = 'https://wa.me/' + w.number + (w.text ? '?text=' + encodeURIComponent(w.text) : '');
     a.target = '_blank'; a.rel = 'noopener';
-    a.setAttribute('aria-label', 'WhatsApp — Hoe kan ik je helpen?');
-    a.innerHTML =
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>' +
-      '<span>Hoe kan ik je helpen?</span>';
+    a.setAttribute('aria-label', 'WhatsApp — ' + (w.label || 'Contact'));
+    a.innerHTML = WA_SVG + '<span>' + esc(w.label || 'WhatsApp') + '</span>';
     return a;
   }
 
-  /* ---- Gedrag (scroll-blur, hamburger, count-up, contactformulier) -------- */
+  /* ── Gedrag (scroll-blur, hamburger, count-up, contactformulier) ─────────── */
   function wireBehaviour() {
     var h = document.getElementById('siteHeader');
-    var RAMP = 120; // px waarover de blur/achtergrond opbouwt
+    var RAMP = 120;
     function onScroll() {
       var t = Math.min(Math.max(window.scrollY, 0) / RAMP, 1);
       h.style.background = 'rgba(255,255,255,' + (t * 0.97).toFixed(3) + ')';
@@ -150,9 +188,7 @@
     }
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-    // Count-up: robuust — start zodra een cijfer in beeld komt. Werkt via
-    // IntersectionObserver én een scroll/resize/load-vangnet (getBoundingClientRect),
-    // zodat het gegarandeerd afspeelt, onafhankelijk van IO-eigenaardigheden.
+    // Count-up: robuust — IntersectionObserver + scroll/resize/load-vangnet.
     var nums = [].slice.call(document.querySelectorAll('.stat-num'));
     function countUp(el) {
       if (el._counted) return; el._counted = true;
@@ -185,7 +221,7 @@
       }
       window.addEventListener('scroll', checkNums, { passive: true });
       window.addEventListener('resize', checkNums, { passive: true });
-      checkNums(); // meteen bij laden: al zichtbare cijfers tellen direct
+      checkNums();
     }
 
     var burger = document.getElementById('hamburger'), menu = document.getElementById('mobileMenu');
@@ -203,23 +239,39 @@
         var val = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
         var naam = val('cf-naam'), email = val('cf-email'), tel = val('cf-tel'), bericht = val('cf-bericht');
         if (!naam || !email || !bericht) { alert('Vul je naam, e-mail en bericht in.'); return; }
+        var to = (window.__contactEmail) || 'deborah@vanderburgcoaching.com';
         var subject = 'Contactaanvraag via website — ' + naam;
         var body = 'Naam: ' + naam + '\nE-mail: ' + email + '\nTelefoon: ' + (tel || '-') + '\n\nBericht:\n' + bericht;
-        window.location.href = 'mailto:deborah@vanderburgcoaching.com' +
-          '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        window.location.href = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
       });
     }
   }
 
-  /* ---- Injecteren --------------------------------------------------------- */
-  function build() {
+  /* ── Config laden + injecteren ──────────────────────────────────────────── */
+  function loadSiteJson() {
+    return fetch('site.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .catch(function () { return {}; });
+  }
+
+  function build(cfg) {
     if (document.getElementById('siteHeader')) return; // dubbel-injectie voorkomen
-    document.body.insertBefore(buildHeader(), document.body.firstChild);
-    document.body.appendChild(buildFooter());
-    document.body.appendChild(buildWhatsApp());
+    // maak contact-e-mail beschikbaar voor het formulier-gedrag
+    if (cfg.footer && cfg.footer.contact && cfg.footer.contact.email) window.__contactEmail = cfg.footer.contact.email;
+    document.body.insertBefore(buildHeader(cfg), document.body.firstChild);
+    document.body.appendChild(buildFooter(cfg));
+    var wa = buildWhatsApp(cfg); if (wa) document.body.appendChild(wa);
     wireBehaviour();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
-  else build();
+  function start() {
+    loadSiteJson().then(function (site) {
+      var cfg = Object.assign({}, DEFAULTS, site);      // site.json wint per top-level sleutel
+      if (window.SITE) cfg = Object.assign(cfg, window.SITE); // expliciete override wint altijd
+      build(cfg);
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
