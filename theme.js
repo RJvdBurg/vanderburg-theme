@@ -139,26 +139,42 @@
     }
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-    var nums = document.querySelectorAll('.stat-num');
-    if (nums.length && 'IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (!en.isIntersecting) return;
-          var el = en.target; io.unobserve(el);
-          var target = parseFloat(el.getAttribute('data-target')) || 0;
-          var dec = parseInt(el.getAttribute('data-decimals') || '0', 10);
-          var suf = el.getAttribute('data-suffix') || '';
-          var dur = 1400, t0 = null;
-          function step(ts) {
-            if (!t0) t0 = ts; var p = Math.min((ts - t0) / dur, 1); var e = 1 - Math.pow(1 - p, 3);
-            el.textContent = (target * e).toFixed(dec) + suf; if (p < 1) requestAnimationFrame(step);
-            else el.textContent = target.toFixed(dec) + suf;
-          }
-          requestAnimationFrame(step);
-          setTimeout(function () { el.textContent = target.toFixed(dec) + suf; }, dur + 400);
-        });
-      }, { threshold: 0.4 });
-      nums.forEach(function (n) { io.observe(n); });
+    // Count-up: robuust — start zodra een cijfer in beeld komt. Werkt via
+    // IntersectionObserver én een scroll/resize/load-vangnet (getBoundingClientRect),
+    // zodat het gegarandeerd afspeelt, onafhankelijk van IO-eigenaardigheden.
+    var nums = [].slice.call(document.querySelectorAll('.stat-num'));
+    function countUp(el) {
+      if (el._counted) return; el._counted = true;
+      var target = parseFloat(el.getAttribute('data-target')) || 0;
+      var dec = parseInt(el.getAttribute('data-decimals') || '0', 10);
+      var suf = el.getAttribute('data-suffix') || '';
+      var dur = 1400, t0 = null;
+      function step(ts) {
+        if (!t0) t0 = ts; var p = Math.min((ts - t0) / dur, 1); var e = 1 - Math.pow(1 - p, 3);
+        el.textContent = (target * e).toFixed(dec) + suf;
+        if (p < 1) requestAnimationFrame(step); else el.textContent = target.toFixed(dec) + suf;
+      }
+      requestAnimationFrame(step);
+      setTimeout(function () { el.textContent = target.toFixed(dec) + suf; }, dur + 400);
+    }
+    function checkNums() {
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      nums.forEach(function (el) {
+        if (el._counted) return;
+        var r = el.getBoundingClientRect();
+        if (r.top < vh * 0.9 && r.bottom > 0) countUp(el);
+      });
+    }
+    if (nums.length) {
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); countUp(en.target); } });
+        }, { threshold: 0.4 });
+        nums.forEach(function (n) { io.observe(n); });
+      }
+      window.addEventListener('scroll', checkNums, { passive: true });
+      window.addEventListener('resize', checkNums, { passive: true });
+      checkNums(); // meteen bij laden: al zichtbare cijfers tellen direct
     }
 
     var burger = document.getElementById('hamburger'), menu = document.getElementById('mobileMenu');
