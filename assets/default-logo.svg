@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" role="img" aria-label="Logo">
+  <rect x="2" y="12" width="32" height="32" rx="8" fill="#3E2E6D"/>
+  <circle cx="18" cy="28" r="7" fill="#f7588e"/>
+  <text x="46" y="27" font-family="'Roboto Slab',Georgia,serif" font-size="18" font-weight="700" fill="#3E2E6D">Jouw merk</text>
+  <text x="46" y="43" font-family="Roboto,Arial,sans-serif" font-size="9" letter-spacing="3" fill="#8a8398">PLACEHOLDER-LOGO</text>
+</svg>
