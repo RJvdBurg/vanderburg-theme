@@ -8,6 +8,7 @@
   --fdisplay:'Roboto Slab',Georgia,serif;--fbody:'Roboto','Helvetica Neue',Arial,sans-serif;
   --maxw:1140px;--px:clamp(1rem,5vw,2rem);--section-py:clamp(3.5rem,8vw,5.5rem);
   --shadow-sm:0 2px 8px rgba(17,24,39,.08);--shadow-md:0 4px 20px rgba(17,24,39,.10);--shadow-lg:0 8px 40px rgba(62,46,109,.12);
+  --carousel-caption-gap:.5rem;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
@@ -267,4 +268,4 @@ body{max-width:1500px;margin-inline:auto;overflow-x:clip}
 .carousel>*{flex:0 0 auto;scroll-snap-align:start;width:min(320px,74vw)}
 .carousel img{width:100%;aspect-ratio:var(--carousel-ar,3/2);height:auto;object-fit:cover;border-radius:14px;display:block;box-shadow:var(--shadow-md)}
 .carousel figure{margin:0}
-.carousel figcaption{font-size:.85rem;color:var(--n500);margin-top:.5rem;text-align:center}
+.carousel figcaption{font-size:.85rem;color:var(--n500);margin-top:var(--carousel-caption-gap,.5rem);text-align:center}
